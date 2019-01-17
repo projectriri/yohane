@@ -11,15 +11,15 @@ const (
 	RESPONSE_ARGSSTR uint8 = 1 << 4
 )
 
-func (p *CommanderPlugin) isWhiteChar(r rune) bool {
+func (p *CorePlugin) isWhiteChar(r rune) bool {
 	return unicode.IsSpace(r)
 }
 
-func (p *CommanderPlugin) isQuoteChar(r rune) bool {
+func (p *CorePlugin) isQuoteChar(r rune) bool {
 	return r == '\'' || r == '"' || r == '`'
 }
 
-func (p *CommanderPlugin) checkPrefix(text string) (prefix string, containPrefix bool) {
+func (p *CorePlugin) checkPrefix(text string) (prefix string, containPrefix bool) {
 	if len(p.config.CommandPrefix) == 0 {
 		return "", true
 	}
@@ -34,7 +34,7 @@ func (p *CommanderPlugin) checkPrefix(text string) (prefix string, containPrefix
 	return "", false
 }
 
-func (p *CommanderPlugin) checkAllowEmptyPrefix() bool {
+func (p *CorePlugin) checkAllowEmptyPrefix() bool {
 	if len(p.config.CommandPrefix) == 0 {
 		return true
 	}
