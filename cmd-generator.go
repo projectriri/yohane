@@ -2,12 +2,42 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/projectriri/bot-gateway/router"
+	"github.com/projectriri/bot-gateway/types"
 	"github.com/projectriri/bot-gateway/types/cmd"
 	"github.com/projectriri/bot-gateway/types/ubm-api"
+	"github.com/projectriri/bot-gateway/utils"
+	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
-func (p *CorePlugin) produceCommand(req *ubm_api.UBM) *cmd.Command {
+func (p *CorePlugin) produceCommand(packet types.Packet, pc *router.ProducerChannel) {
+	req := ubm_api.UBM{}
+	err := json.Unmarshal(packet.Body, &req)
+	if err != nil {
+		log.Errorf("[yohane] message %v has an incorrect body type %v", packet.Head.UUID, err)
+	}
+	c := p.generateCommand(&req)
+	if c != nil {
+		b, _ := json.Marshal(c)
+		pc.Produce(types.Packet{
+			Head: types.Head{
+				From: packet.Head.From,
+				To:   packet.Head.To,
+				UUID: utils.GenerateUUID(),
+				Format: types.Format{
+					API:      "cmd",
+					Method:   "cmd",
+					Version:  "1.0",
+					Protocol: "",
+				},
+			},
+			Body: b,
+		})
+	}
+}
+
+func (p *CorePlugin) generateCommand(req *ubm_api.UBM) *cmd.Command {
 	if req.Type != "message" || req.Message == nil {
 		return nil
 	}
