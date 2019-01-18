@@ -17,7 +17,7 @@ var (
 	GitTag        string
 )
 
-var manifest = types.Manifest{
+var Manifest = types.Manifest{
 	BasicInfo: types.BasicInfo{
 		Name:        "yohane",
 		Author:      "Project Riri Staff",
@@ -40,16 +40,21 @@ type CorePlugin struct {
 }
 
 func (p *CorePlugin) GetManifest() types.Manifest {
-	return manifest
+	return Manifest
 }
 
-func (p *CorePlugin) Init(filename string, configPath string) {
+func Init(filename string, configPath string) []types.Adapter {
 	// load toml config
-	_, err := toml.DecodeFile(configPath+"/"+filename+".toml", &p.config)
+	var config Config
+	_, err := toml.DecodeFile(configPath+"/"+filename+".toml", &config)
 	if err != nil {
 		panic(err)
 	}
+	p := CorePlugin{
+		config: config,
+	}
 	p.allowEmptyPrefix = p.checkAllowEmptyPrefix()
+	return []types.Adapter{&p}
 }
 
 func (p *CorePlugin) Start() {
@@ -100,5 +105,3 @@ func (p *CorePlugin) Start() {
 		}
 	}
 }
-
-var PluginInstance types.Adapter = &CorePlugin{}
