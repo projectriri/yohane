@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/projectriri/bot-gateway/router"
 	"github.com/projectriri/bot-gateway/types"
 	"github.com/projectriri/bot-gateway/types/ubm-api"
 	"github.com/projectriri/bot-gateway/utils"
@@ -16,7 +15,7 @@ type RawCommand struct {
 	Message       *ubm_api.Message
 }
 
-func (p *CorePlugin) produceRawCommand(packet types.Packet, pc *router.ProducerChannel) {
+func (p *CorePlugin) produceRawCommand(packet types.Packet) {
 	req := ubm_api.UBM{}
 	err := json.Unmarshal(packet.Body, &req)
 	if err != nil {
@@ -26,7 +25,7 @@ func (p *CorePlugin) produceRawCommand(packet types.Packet, pc *router.ProducerC
 	c.Message = req.Message
 	if c != nil {
 		b, _ := json.Marshal(c)
-		pc.Produce(types.Packet{
+		p.pc.Produce(types.Packet{
 			Head: types.Head{
 				From: packet.Head.From,
 				To:   packet.Head.To,

@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/BurntSushi/toml"
 	"github.com/projectriri/bot-gateway/router"
 	"github.com/projectriri/bot-gateway/types"
+	"github.com/projectriri/bot-gateway/types/ubm-api"
+	"github.com/projectriri/bot-gateway/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -34,6 +37,8 @@ var Manifest = types.Manifest{
 type CorePlugin struct {
 	config           Config
 	allowEmptyPrefix bool
+	pc               *router.ProducerChannel
+	cc               *router.ConsumerChannel
 }
 
 func (p *CorePlugin) GetManifest() types.Manifest {
@@ -56,7 +61,7 @@ func Init(filename string, configPath string) []types.Adapter {
 
 func (p *CorePlugin) Start() {
 	log.Infof("[yohane] registering consumer channel %v", p.config.ChannelUUID)
-	cc := router.RegisterConsumerChannel(p.config.ChannelUUID, []router.RoutingRule{
+	p.cc = router.RegisterConsumerChannel(p.config.ChannelUUID, []router.RoutingRule{
 		{
 			From: ".*",
 			To:   ".*",
@@ -66,17 +71,60 @@ func (p *CorePlugin) Start() {
 					Version: "1.0",
 					Method:  "receive",
 				},
+				{
+					API:      "cmd",
+					Version:  "1.0",
+					Method:   "cmd",
+					Protocol: `{"command_prefix":["/"],"response_mode":6}`,
+				},
 			},
 		},
 	})
-	defer cc.Close()
-	log.Infof("[yohane] registered consumer channel %v", cc.UUID)
+	defer p.cc.Close()
+	log.Infof("[yohane] registered consumer channel %v", p.cc.UUID)
 	log.Infof("[yohane] registering producer channel %v", p.config.ChannelUUID)
-	pc := router.RegisterProducerChannel(p.config.ChannelUUID, false)
-	defer pc.Close()
-	log.Infof("[yohane] registered producer channel %v", pc.UUID)
+	p.pc = router.RegisterProducerChannel(p.config.ChannelUUID, false)
+	defer p.pc.Close()
+	log.Infof("[yohane] registered producer channel %v", p.pc.UUID)
 	for {
-		packet := cc.Consume()
-		p.produceRawCommand(packet, pc)
+		packet := p.cc.Consume()
+		switch packet.Head.Format.API {
+		case "ubm-api":
+			p.produceRawCommand(packet)
+		case "cmd":
+			p.handleCommand(packet)
+		}
 	}
+}
+
+func (p *CorePlugin) replyText(message *ubm_api.Message, text string) {
+	msg := ubm_api.UBM{
+		Type: "message",
+		Message: &ubm_api.Message{
+			Type: "rich_text",
+			RichText: &ubm_api.RichText{
+				{
+					Type: "text",
+					Text: text,
+				},
+			},
+			CID:     &message.Chat.CID,
+			ReplyID: message.ID,
+		},
+	}
+	b, _ := json.Marshal(msg)
+	p.pc.Produce(types.Packet{
+		Head: types.Head{
+			From: "yohane",
+			To:   message.Chat.CID.Messenger,
+			UUID: utils.GenerateUUID(),
+			Format: types.Format{
+				API:      "ubm-api",
+				Method:   "send",
+				Version:  "1.0",
+				Protocol: "",
+			},
+		},
+		Body: b,
+	})
 }

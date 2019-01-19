@@ -31,6 +31,7 @@ func (p *CorePlugin) Convert(packet types.Packet, to types.Format) (bool, []type
 	if err != nil {
 		return false, nil
 	}
+	rawCommand = p.handleAlias(rawCommand)
 	var filter Filter
 	err = json.Unmarshal([]byte(to.Protocol), &filter)
 	if err != nil || filter.CmdPrefix == nil {
