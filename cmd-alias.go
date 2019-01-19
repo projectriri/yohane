@@ -15,11 +15,11 @@ type CmdRegexMap struct {
 }
 
 var cmdAliasMap = make(map[string]map[string][][]ubm_api.RichTextElement)
-var cmdRegexAliasMap = make(map[string]map[string]CmdRegexMap)
+var cmdRegexAliasMap = make(map[string]map[string]*CmdRegexMap)
 
 type CmdAliasDump struct {
 	CmdAliasMap      map[string]map[string][][]ubm_api.RichTextElement
-	CmdRegexAliasMap map[string]map[string]CmdRegexMap
+	CmdRegexAliasMap map[string]map[string]*CmdRegexMap
 }
 
 func (p *CorePlugin) readCmdAliases() {
@@ -34,6 +34,11 @@ func (p *CorePlugin) readCmdAliases() {
 	}
 	if dump.CmdRegexAliasMap != nil {
 		cmdRegexAliasMap = dump.CmdRegexAliasMap
+		for _, m := range cmdRegexAliasMap {
+			for reg, crm := range m {
+				crm.Regex = regexp.MustCompile(reg)
+			}
+		}
 	}
 }
 
@@ -77,14 +82,14 @@ func (p *CorePlugin) removeAlias(alias []ubm_api.RichTextElement, aliasMap map[s
 	return false
 }
 
-func (p *CorePlugin) setRegexAlias(alias []ubm_api.RichTextElement, target [][]ubm_api.RichTextElement, aliasMap map[string]CmdRegexMap) {
+func (p *CorePlugin) setRegexAlias(alias []ubm_api.RichTextElement, target [][]ubm_api.RichTextElement, aliasMap map[string]*CmdRegexMap) {
 	var reg string
 	for _, elem := range alias {
 		if elem.Type == "text" {
 			reg += elem.Text
 		}
 	}
-	crm := CmdRegexMap{
+	crm := &CmdRegexMap{
 		Regex:  regexp.MustCompile(reg),
 		Target: target,
 	}
@@ -92,7 +97,7 @@ func (p *CorePlugin) setRegexAlias(alias []ubm_api.RichTextElement, target [][]u
 	p.writeCmdAliases()
 }
 
-func (p *CorePlugin) getRegexAlias(alias []ubm_api.RichTextElement, aliasMap map[string]CmdRegexMap) [][]ubm_api.RichTextElement {
+func (p *CorePlugin) getRegexAlias(alias []ubm_api.RichTextElement, aliasMap map[string]*CmdRegexMap) [][]ubm_api.RichTextElement {
 	var c string
 	for _, elem := range alias {
 		if elem.Type == "text" {
@@ -107,7 +112,7 @@ func (p *CorePlugin) getRegexAlias(alias []ubm_api.RichTextElement, aliasMap map
 	return nil
 }
 
-func (p *CorePlugin) removeRegexAlias(alias []ubm_api.RichTextElement, aliasMap map[string]CmdRegexMap) bool {
+func (p *CorePlugin) removeRegexAlias(alias []ubm_api.RichTextElement, aliasMap map[string]*CmdRegexMap) bool {
 	var reg string
 	for _, elem := range alias {
 		if elem.Type == "text" {
@@ -204,7 +209,7 @@ OPTIONS:
 	}
 	if regMode {
 		if _, ok := cmdRegexAliasMap[key]; !ok {
-			cmdRegexAliasMap[key] = make(map[string]CmdRegexMap)
+			cmdRegexAliasMap[key] = make(map[string]*CmdRegexMap)
 		}
 		p.setRegexAlias(command.Args[0], command.Args[1:], cmdRegexAliasMap[key])
 	} else {
