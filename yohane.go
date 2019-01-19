@@ -77,6 +77,6 @@ func (p *CorePlugin) Start() {
 	log.Infof("[yohane] registered producer channel %v", pc.UUID)
 	for {
 		packet := cc.Consume()
-		p.produceCommand(packet, pc)
+		p.produceRawCommand(packet, pc)
 	}
 }

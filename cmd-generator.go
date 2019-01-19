@@ -4,20 +4,26 @@ import (
 	"encoding/json"
 	"github.com/projectriri/bot-gateway/router"
 	"github.com/projectriri/bot-gateway/types"
-	"github.com/projectriri/bot-gateway/types/cmd"
 	"github.com/projectriri/bot-gateway/types/ubm-api"
 	"github.com/projectriri/bot-gateway/utils"
 	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
-func (p *CorePlugin) produceCommand(packet types.Packet, pc *router.ProducerChannel) {
+type RawCommand struct {
+	ParsedCommand [][]ubm_api.RichTextElement
+	Prefix        string
+	Message       *ubm_api.Message
+}
+
+func (p *CorePlugin) produceRawCommand(packet types.Packet, pc *router.ProducerChannel) {
 	req := ubm_api.UBM{}
 	err := json.Unmarshal(packet.Body, &req)
 	if err != nil {
 		log.Errorf("[yohane] message %v has an incorrect body type %v", packet.Head.UUID, err)
 	}
-	c := p.generateCommand(&req)
+	c := p.parseCommand(&req)
+	c.Message = req.Message
 	if c != nil {
 		b, _ := json.Marshal(c)
 		pc.Produce(types.Packet{
@@ -27,7 +33,7 @@ func (p *CorePlugin) produceCommand(packet types.Packet, pc *router.ProducerChan
 				UUID: utils.GenerateUUID(),
 				Format: types.Format{
 					API:      "cmd",
-					Method:   "cmd",
+					Method:   "raw-cmd",
 					Version:  "1.0",
 					Protocol: "",
 				},
@@ -37,7 +43,7 @@ func (p *CorePlugin) produceCommand(packet types.Packet, pc *router.ProducerChan
 	}
 }
 
-func (p *CorePlugin) generateCommand(req *ubm_api.UBM) *cmd.Command {
+func (p *CorePlugin) parseCommand(req *ubm_api.UBM) *RawCommand {
 	if req.Type != "message" || req.Message == nil {
 		return nil
 	}
@@ -174,44 +180,8 @@ func (p *CorePlugin) generateCommand(req *ubm_api.UBM) *cmd.Command {
 		buffer = make([]rune, 0)
 	}
 
-	// compose response according to config.ResponseMode in bit mask
-	c := cmd.Command{}
-	c.CmdPrefix = pfx
-	if p.config.ResponseMode&RESPONSE_CMD != 0 {
-		c.Cmd = parsedCommand[0]
+	return &RawCommand{
+		ParsedCommand: parsedCommand,
+		Prefix:        pfx,
 	}
-	if p.config.ResponseMode&RESPONSE_CMDSTR != 0 {
-		for _, elem := range parsedCommand[0] {
-			if elem.Type == "text" {
-				c.CmdStr += elem.Text
-			}
-		}
-	}
-	if p.config.ResponseMode&RESPONSE_ARGS != 0 {
-		c.Args = parsedCommand[1:]
-	}
-	if p.config.ResponseMode&RESPONSE_ARGSTXT != 0 ||
-		p.config.ResponseMode&RESPONSE_ARGSSTR != 0 {
-		tmpArgsTxt := make([]string, 0)
-		for _, aCmd := range parsedCommand[1:] {
-			tmp := ""
-			for _, elem := range aCmd {
-				if elem.Type == "text" {
-					tmp += elem.Text
-				}
-			}
-			if len(tmp) != 0 {
-				tmpArgsTxt = append(tmpArgsTxt, tmp)
-			}
-		}
-		if p.config.ResponseMode&RESPONSE_ARGSTXT != 0 {
-			c.ArgsTxt = tmpArgsTxt
-		}
-		if p.config.ResponseMode&RESPONSE_ARGSSTR != 0 {
-			c.ArgsStr = strings.Join(tmpArgsTxt, " ")
-		}
-	}
-	c.Message = req.Message
-
-	return &c
 }

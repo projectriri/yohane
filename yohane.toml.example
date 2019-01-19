@@ -1,3 +1,4 @@
 channel_uuid = ""
 command_prefix = ["/"]
-response_mode = 31
+# you have to make sure that directory ./data exists and accessible
+command_alias_path = "data/command_alias.json"
