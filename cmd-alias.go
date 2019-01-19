@@ -4,20 +4,56 @@ import (
 	"encoding/json"
 	"github.com/projectriri/bot-gateway/types/cmd"
 	"github.com/projectriri/bot-gateway/types/ubm-api"
+	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"regexp"
 )
 
 type CmdRegexMap struct {
-	regex *regexp.Regexp
-	target [][]ubm_api.RichTextElement
+	Regex  *regexp.Regexp
+	Target [][]ubm_api.RichTextElement
 }
 
 var cmdAliasMap = make(map[string]map[string][][]ubm_api.RichTextElement)
 var cmdRegexAliasMap = make(map[string]map[string]CmdRegexMap)
 
+type CmdAliasDump struct {
+	CmdAliasMap      map[string]map[string][][]ubm_api.RichTextElement
+	CmdRegexAliasMap map[string]map[string]CmdRegexMap
+}
+
+func (p *CorePlugin) readCmdAliases() {
+	var dump CmdAliasDump
+	b, err := ioutil.ReadFile(p.config.CommandAliasPath)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(b, &dump)
+	if dump.CmdAliasMap != nil {
+		cmdAliasMap = dump.CmdAliasMap
+	}
+	if dump.CmdRegexAliasMap != nil {
+		cmdRegexAliasMap = dump.CmdRegexAliasMap
+	}
+}
+
+func (p *CorePlugin) writeCmdAliases() {
+	dump := CmdAliasDump{
+		CmdAliasMap:      cmdAliasMap,
+		CmdRegexAliasMap: cmdRegexAliasMap,
+	}
+	b, _ := json.Marshal(dump)
+	err := ioutil.WriteFile(p.config.CommandAliasPath, b, 0644)
+	if err != nil {
+		log.Error("[yohane] failed to save alias map to disk")
+		return
+	}
+}
+
 func (p *CorePlugin) setAlias(alias []ubm_api.RichTextElement, target [][]ubm_api.RichTextElement, aliasMap map[string][][]ubm_api.RichTextElement) {
 	data, _ := json.Marshal(alias)
 	aliasMap[string(data)] = target
+	p.writeCmdAliases()
 }
 
 func (p *CorePlugin) getAlias(alias []ubm_api.RichTextElement, aliasMap map[string][][]ubm_api.RichTextElement) [][]ubm_api.RichTextElement {
@@ -35,6 +71,7 @@ func (p *CorePlugin) removeAlias(alias []ubm_api.RichTextElement, aliasMap map[s
 	_, ok := aliasMap[key]
 	if ok {
 		delete(aliasMap, key)
+		p.writeCmdAliases()
 		return true
 	}
 	return false
@@ -48,10 +85,11 @@ func (p *CorePlugin) setRegexAlias(alias []ubm_api.RichTextElement, target [][]u
 		}
 	}
 	crm := CmdRegexMap{
-		regex: regexp.MustCompile(reg),
-		target: target,
+		Regex:  regexp.MustCompile(reg),
+		Target: target,
 	}
 	aliasMap[reg] = crm
+	p.writeCmdAliases()
 }
 
 func (p *CorePlugin) getRegexAlias(alias []ubm_api.RichTextElement, aliasMap map[string]CmdRegexMap) [][]ubm_api.RichTextElement {
@@ -62,8 +100,8 @@ func (p *CorePlugin) getRegexAlias(alias []ubm_api.RichTextElement, aliasMap map
 		}
 	}
 	for _, crm := range aliasMap {
-		if crm.regex.MatchString(c) {
-			return crm.target;
+		if crm.Regex.MatchString(c) {
+			return crm.Target
 		}
 	}
 	return nil
@@ -79,6 +117,7 @@ func (p *CorePlugin) removeRegexAlias(alias []ubm_api.RichTextElement, aliasMap 
 	_, ok := aliasMap[reg]
 	if ok {
 		delete(aliasMap, reg)
+		p.writeCmdAliases()
 		return true
 	}
 	return false

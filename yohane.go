@@ -60,6 +60,7 @@ func Init(filename string, configPath string) []types.Converter {
 }
 
 func (p *CorePlugin) Start() {
+	p.readCmdAliases()
 	log.Infof("[yohane] registering consumer channel %v", p.config.ChannelUUID)
 	p.cc = router.RegisterConsumerChannel(p.config.ChannelUUID, []router.RoutingRule{
 		{
@@ -75,7 +76,7 @@ func (p *CorePlugin) Start() {
 					API:      "cmd",
 					Version:  "1.0",
 					Method:   "cmd",
-					Protocol: `{"command_prefix":["/"],"response_mode":6}`,
+					Protocol: `{"command_prefix":["` + p.config.YohaneCommandPrefix + `"],"response_mode":6}`,
 				},
 			},
 		},
