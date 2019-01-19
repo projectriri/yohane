@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"github.com/projectriri/bot-gateway/types/cmd"
 	"github.com/projectriri/bot-gateway/types/ubm-api"
@@ -12,16 +10,12 @@ var cmdAliasMap = make(map[string]map[string][][]ubm_api.RichTextElement)
 
 func (p *CorePlugin) setAlias(alias []ubm_api.RichTextElement, target [][]ubm_api.RichTextElement, aliasMap map[string][][]ubm_api.RichTextElement) {
 	data, _ := json.Marshal(alias)
-	hasher := md5.New()
-	hasher.Write(data)
-	aliasMap[hex.EncodeToString(hasher.Sum(nil))] = target
+	aliasMap[string(data)] = target
 }
 
 func (p *CorePlugin) getAlias(alias []ubm_api.RichTextElement, aliasMap map[string][][]ubm_api.RichTextElement) [][]ubm_api.RichTextElement {
 	data, _ := json.Marshal(alias)
-	hasher := md5.New()
-	hasher.Write(data)
-	target, ok := aliasMap[hex.EncodeToString(hasher.Sum(nil))]
+	target, ok := aliasMap[string(data)]
 	if ok {
 		return target
 	}
@@ -30,9 +24,7 @@ func (p *CorePlugin) getAlias(alias []ubm_api.RichTextElement, aliasMap map[stri
 
 func (p *CorePlugin) removeAlias(alias []ubm_api.RichTextElement, aliasMap map[string][][]ubm_api.RichTextElement) bool {
 	data, _ := json.Marshal(alias)
-	hasher := md5.New()
-	hasher.Write(data)
-	key := hex.EncodeToString(hasher.Sum(nil))
+	key := string(data)
 	_, ok := aliasMap[key]
 	if ok {
 		delete(aliasMap, key)

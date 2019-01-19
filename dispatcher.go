@@ -14,9 +14,9 @@ func (p *CorePlugin) handleCommand(packet types.Packet) {
 		log.Errorf("[yohane] command %v has an incorrect body type %v", packet.Head.UUID, err)
 	}
 	switch command.CmdStr {
-	case "alias":
+	case "yohane::alias":
 		p.handleSetAlias(command)
-	case "unalias":
+	case "yohane::unalias":
 		p.handleRemoveAlias(command)
 	}
 }

@@ -10,7 +10,7 @@
 
 ## 命令别名
 
-`link`，`unlink`，`alias`，`unalias`
+`yohane::alias`，`yohane::unalias`
 
 在特定聊天下进行命令映射。（[#11](https://github.com/projectriri/bot-gateway/issues/11)）
 
@@ -18,7 +18,7 @@
 
 ## 帮助菜单
 
-`help`，`man`，`start`
+`help`，`man`
 
 从每个消费者频道注册的帮助信息中读取帮助内容。（[#9](https://github.com/projectriri/bot-gateway/issues/9)）
 
