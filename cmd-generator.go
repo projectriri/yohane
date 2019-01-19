@@ -22,8 +22,8 @@ func (p *CorePlugin) produceRawCommand(packet types.Packet) {
 		log.Errorf("[yohane] message %v has an incorrect body type %v", packet.Head.UUID, err)
 	}
 	c := p.parseCommand(&req)
-	c.Message = req.Message
 	if c != nil {
+		c.Message = req.Message
 		b, _ := json.Marshal(c)
 		p.pc.Produce(types.Packet{
 			Head: types.Head{
