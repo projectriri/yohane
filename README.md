@@ -6,7 +6,7 @@
 
 ## 命令过滤
 
-对于解析过的命令，根据消费方频道的协议要求（正则）来帮助应用过滤（[#10](https://github.com/projectriri/bot-gateway/issues/10)）
+对于解析过的命令，根据消费方频道的协议要求来帮助应用过滤（[#10](https://github.com/projectriri/bot-gateway/issues/10)）
 
 ## 命令别名
 
