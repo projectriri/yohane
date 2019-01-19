@@ -45,7 +45,7 @@ func (p *CorePlugin) GetManifest() types.Manifest {
 	return Manifest
 }
 
-func Init(filename string, configPath string) []types.Adapter {
+func Init(filename string, configPath string) []types.Converter {
 	// load toml config
 	var config Config
 	_, err := toml.DecodeFile(configPath+"/"+filename+".toml", &config)
@@ -56,7 +56,7 @@ func Init(filename string, configPath string) []types.Adapter {
 		config: config,
 	}
 	p.allowEmptyPrefix = p.checkAllowEmptyPrefix()
-	return []types.Adapter{&p}
+	return []types.Converter{&p}
 }
 
 func (p *CorePlugin) Start() {
