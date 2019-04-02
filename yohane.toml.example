@@ -1,5 +1,5 @@
 channel_uuid = ""
 command_prefix = ["/"]
-yohane_command_prefix = "/"
+yohane_command_prefix = "!!"
 # you have to make sure that directory ./data exists and accessible
 command_alias_path = "data/command_alias.json"
